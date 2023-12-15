@@ -1,35 +1,35 @@
-FROM ubuntu:18.04
+FROM ros:melodic-ros-base
 
-ENV DEBIAN_FRONTEND=noninteractive 
+ARG DEBIAN_FRONTEND=noninteractive 
+ARG FLIGHTMARE_PATH=/flightmare
+ENV FLIGHTMARE_PATH=/flightmare
 
 # Installing some essential system packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-   lsb-release \
-   build-essential \
-   python3 python3-dev python3-pip \
-   cmake \
-   git \
-   vim \
-   ca-certificates \
-   libzmqpp-dev \
-   libopencv-dev \
-   gnupg2 \
-   && rm -rf /var/lib/apt/lists/*
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key 4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+      lsb-release \
+      build-essential \
+      python3 python3-dev python3-pip \
+      cmake \
+      git \
+      ca-certificates \
+      libzmqpp-dev \
+      libopencv-dev \
+      gnupg2 \
+      python3-setuptools \ 
+      python3-catkin-tools
 
-RUN /bin/bash -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' && \
-    apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654 
+RUN apt-get clean autoclean &&\
+    rm -rf /var/lib/apt/lists/*
 
-# Installing ROS  Melodic
-RUN apt-get update && apt-get install -y --no-install-recommends \
-   ros-melodic-desktop-full 
+RUN mkdir ${FLIGHTMARE_PATH}
+COPY ./ /flightmare
 
-# Installing catkin tools
-RUN apt-get update && apt-get install -y python3-setuptools && pip3 install catkin-tools 
+RUN pip3 install -U pip wheel
 
-RUN /bin/bash cd /home && git clone https://github.com/uzh-rpg/flightmare.git \
-    && echo "export FLIGHTMARE_PATH=/home/flightmare" >> ~/.bashrc
-    && source ~/.bashrc
+WORKDIR ${FLIGHTMARE_PATH}/flightlib
+RUN pip3 install . 
 
-RUN /bin/bash cd /home/flightmare/flightlib && pip3 install . \
-    && cd /home/flightmare/flightrl && pip3 install . \
-    && 
+WORKDIR ${FLIGHTMARE_PATH}/flightrl
+RUN pip3 install .
